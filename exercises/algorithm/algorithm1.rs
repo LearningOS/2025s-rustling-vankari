@@ -70,14 +70,66 @@ impl<T> LinkedList<T> {
         }
     }
 	pub fn merge(list_a:LinkedList<T>,list_b:LinkedList<T>) -> Self
+    where T:Ord
 	{
-		//TODO
-		Self {
-            length: 0,
-            start: None,
-            end: None,
+		let mut merged = LinkedList::new();
+        let mut tail: Option<NonNull<Node<T>>> = None;
+        let total_length = list_a.length + list_b.length;
+
+        // Pointers to the current node in each list.
+        let mut a_ptr = list_a.start;
+        let mut b_ptr = list_b.start;
+
+        // While both lists have nodes, pick the smaller value.
+        while a_ptr.is_some() && b_ptr.is_some() {
+            unsafe {
+                if (*a_ptr.unwrap().as_ptr()).val <= (*b_ptr.unwrap().as_ptr()).val {
+                    // Save a_ptr's next pointer.
+                    let next_a = (*a_ptr.unwrap().as_ptr()).next;
+                    // Append a_ptr to the merged list.
+                    if let Some(t) = tail {
+                        (*t.as_ptr()).next = a_ptr;
+                    } else {
+                        merged.start = a_ptr;
+                    }
+                    tail = a_ptr;
+                    a_ptr = next_a;
+                } else {
+                    let next_b = (*b_ptr.unwrap().as_ptr()).next;
+                    if let Some(t) = tail {
+                        (*t.as_ptr()).next = b_ptr;
+                    } else {
+                        merged.start = b_ptr;
+                    }
+                    tail = b_ptr;
+                    b_ptr = next_b;
+                }
+            }
         }
-	}
+
+        // Append any remaining nodes from either list.
+        let remaining = if a_ptr.is_some() { a_ptr } else { b_ptr };
+        if let Some(rem) = remaining {
+            unsafe {
+                if let Some(t) = tail {
+                    (*t.as_ptr()).next = Some(rem);
+                } else {
+                    merged.start = Some(rem);
+                }
+                // Walk to the end of the remaining chain to update tail.
+                let mut last = rem;
+                while let Some(next) = (*last.as_ptr()).next {
+                    last = next;
+                }
+                tail = Some(last);
+            }
+        }
+
+        merged.end = tail;
+        merged.length = total_length;
+        merged
+    }
+	
 }
 
 impl<T> Display for LinkedList<T>
