@@ -2,7 +2,7 @@
 	heap
 	This question requires you to implement a binary heap function
 */
-// I AM NOT DONE
+
 
 use std::cmp::Ord;
 use std::default::Default;
@@ -23,6 +23,7 @@ where
     pub fn new(comparator: fn(&T, &T) -> bool) -> Self {
         Self {
             count: 0,
+            // index 0 is unused so that the children of node at index i are at indices 2*i and 2*i+1
             items: vec![T::default()],
             comparator,
         }
@@ -37,7 +38,20 @@ where
     }
 
     pub fn add(&mut self, value: T) {
-        //TODO
+        // Add new element to the end and increment count.
+        self.items.push(value);
+        self.count += 1;
+        let mut idx = self.count;
+        // Bubble-up: while not at root and current is "better" than parent, swap.
+        while idx > 1 {
+            let parent = self.parent_idx(idx);
+            if (self.comparator)(&self.items[idx], &self.items[parent]) {
+                self.items.swap(idx, parent);
+                idx = parent;
+            } else {
+                break;
+            }
+        }
     }
 
     fn parent_idx(&self, idx: usize) -> usize {
@@ -57,8 +71,18 @@ where
     }
 
     fn smallest_child_idx(&self, idx: usize) -> usize {
-        //TODO
-		0
+        let left = self.left_child_idx(idx);
+        let right = self.right_child_idx(idx);
+        // If right child doesn't exist, return left child.
+        if right > self.count {
+            return left;
+        }
+        // Use the comparator to decide which child is "better".
+        if (self.comparator)(&self.items[left], &self.items[right]) {
+            left
+        } else {
+            right
+        }
     }
 }
 
@@ -84,8 +108,26 @@ where
     type Item = T;
 
     fn next(&mut self) -> Option<T> {
-        //TODO
-		None
+        if self.count == 0 {
+            return None;
+        }
+        // Swap the root with the last element and remove the last element (which was the root).
+        self.items.swap(1, self.count);
+        let removed = self.items.pop().unwrap();
+        self.count -= 1;
+
+        // Bubble-down: fix the heap property starting at the root.
+        let mut idx = 1;
+        while self.children_present(idx) {
+            let child_idx = self.smallest_child_idx(idx);
+            if (self.comparator)(&self.items[child_idx], &self.items[idx]) {
+                self.items.swap(idx, child_idx);
+                idx = child_idx;
+            } else {
+                break;
+            }
+        }
+        Some(removed)
     }
 }
 
